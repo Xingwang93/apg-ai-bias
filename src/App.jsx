@@ -107,7 +107,7 @@ function App() {
 
         <div className="title-section">
           <h1>AI Gender Guard</h1>
-          <p className="subtitle">Analisi della Parità di Genere nella GenAI</p>
+          <p className="subtitle">Analisi della Parità di Genere nella GenAI.</p>
           <div className="stats-pill">
             Osservazioni: <strong>{entries.length}</strong>
           </div>
