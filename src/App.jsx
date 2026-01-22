@@ -68,7 +68,7 @@ function App() {
         {
           prompt: entry.prompt,
           model: entry.model,
-          gender_bias: entry.genderBias,
+          gender_bias: entry.gender_bias,
           notes: entry.notes,
           image_url: publicImageUrl
         }
@@ -86,20 +86,22 @@ function App() {
 
   return (
     <div className="container">
-      <header style={{ textAlign: 'center', marginBottom: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', position: 'relative' }}>
-        <img src="/logo-apg.png" alt="APG Logo" style={{ height: '80px', width: 'auto' }} />
+      <header className="app-header">
         <button
           onClick={() => setUserRole(null)}
-          style={{ position: 'absolute', top: 0, left: 0, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem' }}
+          className="back-btn"
         >
           ← Cambia Ruolo
         </button>
-        <div>
-          <h1 style={{ marginBottom: '0.5rem' }}>Esploratore Bias AI</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Analisi della Parità di Genere nella GenAI</p>
-          <p style={{ fontSize: '0.9rem', color: 'var(--secondary)', marginTop: '0.5rem', fontWeight: 600 }}>
-            Osservazioni Totali: {entries.length}
-          </p>
+
+        <img src="/logo-apg.png" alt="APG Logo" className="logo" />
+
+        <div className="title-section">
+          <h1>AI Gender Guard</h1>
+          <p className="subtitle">Analisi della Parità di Genere nella GenAI</p>
+          <div className="stats-pill">
+            Osservazioni: <strong>{entries.length}</strong>
+          </div>
         </div>
       </header>
 
@@ -107,52 +109,28 @@ function App() {
         <AdminPanel onExit={() => setUserRole('participant')} />
       ) : (
         <>
-          <nav style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '2rem' }}>
+          <nav className="nav-tabs">
             <button
               onClick={() => setActiveTab('input')}
-              className={activeTab === 'input' ? 'btn-primary' : ''}
-              style={{
-                background: activeTab === 'input' ? 'var(--primary)' : 'white',
-                color: activeTab === 'input' ? 'white' : 'var(--text-main)',
-                border: activeTab === 'input' ? 'none' : '1px solid #E5E7EB',
-                padding: '0.5rem 1.5rem',
-                borderRadius: 'var(--radius-sm)',
-                fontWeight: 600
-              }}
+              className={`btn tab-btn ${activeTab === 'input' ? 'active' : ''}`}
             >
-              Inserisci
+              Nuova Analisi
             </button>
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={activeTab === 'dashboard' ? 'btn-primary' : ''}
-              style={{
-                background: activeTab === 'dashboard' ? 'var(--primary)' : 'white',
-                color: activeTab === 'dashboard' ? 'white' : 'var(--text-main)',
-                border: activeTab === 'dashboard' ? 'none' : '1px solid #E5E7EB',
-                padding: '0.5rem 1.5rem',
-                borderRadius: 'var(--radius-sm)',
-                fontWeight: 600
-              }}
+              className={`btn tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
             >
               Statistiche
             </button>
             <button
               onClick={() => setActiveTab('gallery')}
-              className={activeTab === 'gallery' ? 'btn-primary' : ''}
-              style={{
-                background: activeTab === 'gallery' ? 'var(--primary)' : 'white',
-                color: activeTab === 'gallery' ? 'white' : 'var(--text-main)',
-                border: activeTab === 'gallery' ? 'none' : '1px solid #E5E7EB',
-                padding: '0.5rem 1.5rem',
-                borderRadius: 'var(--radius-sm)',
-                fontWeight: 600
-              }}
+              className={`btn tab-btn ${activeTab === 'gallery' ? 'active' : ''}`}
             >
-              Galleria
+              Galleria Live
             </button>
           </nav>
 
-          <main>
+          <main className="app-main">
             {activeTab === 'input' && (
               <DataEntry onAddEntry={addEntry} userRole={userRole} />
             )}
@@ -165,6 +143,63 @@ function App() {
           </main>
         </>
       )}
+
+      <style>{`
+        .app-header {
+          text-align: center;
+          margin-bottom: var(--space-xl);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1.5rem;
+          position: relative;
+        }
+        .logo {
+          height: 80px;
+          width: auto;
+          filter: drop-shadow(0 4px 10px rgba(0,0,0,0.1));
+        }
+        .back-btn {
+          position: absolute;
+          top: 0;
+          left: 0;
+          background: rgba(255,255,255,0.5);
+          backdrop-filter: blur(4px);
+          border: 1px solid var(--glass-border);
+          padding: 0.4rem 0.8rem;
+          border-radius: var(--radius-sm);
+          color: var(--text-muted);
+          cursor: pointer;
+          font-size: 0.8rem;
+          font-weight: 600;
+          transition: all 0.2s;
+        }
+        .back-btn:hover {
+          background: white;
+          color: var(--primary);
+        }
+        .title-section h1 {
+          margin-bottom: 0.2rem;
+        }
+        .subtitle {
+          color: var(--text-muted);
+          font-weight: 500;
+          letter-spacing: 0.05em;
+        }
+        .stats-pill {
+          display: inline-block;
+          margin-top: 1rem;
+          background: var(--secondary);
+          color: white;
+          padding: 0.3rem 1.2rem;
+          border-radius: 999px;
+          font-size: 0.9rem;
+          box-shadow: 0 4px 12px rgba(0, 51, 153, 0.2);
+        }
+        @media (max-width: 768px) {
+          .back-btn { position: static; margin-bottom: 1rem; }
+        }
+      `}</style>
     </div>
   )
 }
