@@ -118,14 +118,79 @@ function DataEntry({ onAddEntry, userRole }) {
                         />
                         <button
                             type="button"
-                            className="btn-primary"
+                            className="btn-premium"
                             onClick={handleGenerate}
                             disabled={isGenerating || !generationEnabled}
-                            style={{ minWidth: '130px', opacity: generationEnabled ? 1 : 0.5 }}
+                            style={{
+                                minWidth: '140px',
+                                opacity: generationEnabled ? 1 : 0.5,
+                                position: 'relative',
+                                overflow: 'hidden'
+                            }}
                         >
-                            {isGenerating ? '...' : (generationEnabled ? 'Genera Img' : 'DISATTIVATO')}
+                            {isGenerating ? (
+                                <span className="loader-dots">
+                                    <span>.</span><span>.</span><span>.</span>
+                                </span>
+                            ) : (
+                                <>
+                                    <span style={{ marginRight: '8px' }}>✨</span>
+                                    {generationEnabled ? 'Genera Img' : 'DISATTIVATO'}
+                                </>
+                            )}
                         </button>
                     </div>
+                    <style>{`
+                        .btn-premium {
+                            background: linear-gradient(135deg, #FF6600 0%, #FF9966 100%);
+                            color: white;
+                            border: none;
+                            padding: 0.8rem 1.5rem;
+                            border-radius: var(--radius-sm);
+                            font-weight: 700;
+                            font-family: 'Outfit', sans-serif;
+                            cursor: pointer;
+                            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+                            box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            text-transform: uppercase;
+                            letter-spacing: 0.05em;
+                            font-size: 0.85rem;
+                        }
+
+                        .btn-premium:hover:not(:disabled) {
+                            transform: translateY(-2px) scale(1.02);
+                            box-shadow: 0 6px 20px rgba(255, 102, 0, 0.4);
+                            background: linear-gradient(135deg, #FF7722 0%, #FFAA77 100%);
+                        }
+
+                        .btn-premium:active:not(:disabled) {
+                            transform: translateY(0) scale(0.98);
+                        }
+
+                        .btn-premium:disabled {
+                            background: #9CA3AF;
+                            box-shadow: none;
+                            cursor: not-allowed;
+                        }
+
+                        .loader-dots span {
+                            animation: blink 1.4s infinite both;
+                            font-size: 1.5rem;
+                            line-height: 0;
+                        }
+
+                        .loader-dots span:nth-child(2) { animation-delay: 0.2s; }
+                        .loader-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+                        @keyframes blink {
+                            0% { opacity: 0.2; }
+                            20% { opacity: 1; }
+                            100% { opacity: 0.2; }
+                        }
+                    `}</style>
                     {error && (
                         <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>
                             {error}
