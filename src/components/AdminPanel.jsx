@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
-function AdminPanel({ onExit }) {
+function AdminPanel({ onExit, adminPasscode }) {
     const [configs, setConfigs] = useState([])
     const [newKey, setNewKey] = useState('')
     const [newValue, setNewValue] = useState('')
@@ -9,14 +9,21 @@ function AdminPanel({ onExit }) {
 
     const fetchConfigs = async () => {
         setLoading(true)
-        const { data, error } = await supabase
-            .from('app_config')
-            .select('*')
-            .order('config_key', { ascending: true })
-
-        if (error) console.error('Error fetching configs:', error)
-        else setConfigs(data || [])
-        setLoading(false)
+        try {
+            const response = await fetch('/api/config', {
+                headers: { 'x-admin-passcode': adminPasscode }
+            })
+            if (response.ok) {
+                const data = await response.json()
+                setConfigs(data || [])
+            } else {
+                console.error('Failed to fetch configs')
+            }
+        } catch (error) {
+            console.error('Error fetching configs:', error)
+        } finally {
+            setLoading(false)
+        }
     }
 
     useEffect(() => {
@@ -27,31 +34,50 @@ function AdminPanel({ onExit }) {
         e.preventDefault()
         if (!newKey || !newValue) return
 
-        const { error } = await supabase
-            .from('app_config')
-            .upsert({ config_key: newKey, config_value: newValue }, { onConflict: 'config_key' })
+        try {
+            const response = await fetch('/api/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-passcode': adminPasscode
+                },
+                body: JSON.stringify({ config_key: newKey, config_value: newValue })
+            })
 
-        if (error) {
-            alert('Errore nel salvataggio: ' + error.message)
-        } else {
-            setNewKey('')
-            setNewValue('')
-            fetchConfigs()
+            if (!response.ok) {
+                const err = await response.json()
+                alert('Errore nel salvataggio: ' + (err.error || 'Unknown error'))
+            } else {
+                setNewKey('')
+                setNewValue('')
+                fetchConfigs()
+            }
+        } catch (error) {
+            alert('Errore di rete: ' + error.message)
         }
     }
 
     const handleDelete = async (key) => {
         if (!confirm(`Sei sicuro di voler eliminare la configurazione "${key}"?`)) return
 
-        const { error } = await supabase
-            .from('app_config')
-            .delete()
-            .eq('config_key', key)
+        try {
+            const response = await fetch('/api/config', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-passcode': adminPasscode
+                },
+                body: JSON.stringify({ config_key: key })
+            })
 
-        if (error) {
-            alert('Errore nell\'eliminazione: ' + error.message)
-        } else {
-            fetchConfigs()
+            if (!response.ok) {
+                const err = await response.json()
+                alert('Errore nell\'eliminazione: ' + (err.error || 'Unknown error'))
+            } else {
+                fetchConfigs()
+            }
+        } catch (error) {
+            alert('Errore di rete: ' + error.message)
         }
     }
 
@@ -69,10 +95,21 @@ function AdminPanel({ onExit }) {
                     <button
                         onClick={async () => {
                             const currentStatus = configs.find(c => c.config_key === 'GENERATION_ENABLED')?.config_value === 'true'
-                            const { error } = await supabase
-                                .from('app_config')
-                                .upsert({ config_key: 'GENERATION_ENABLED', config_value: (!currentStatus).toString() }, { onConflict: 'config_key' })
-                            if (!error) fetchConfigs()
+                            const newValue = (!currentStatus).toString()
+
+                            try {
+                                await fetch('/api/config', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'x-admin-passcode': adminPasscode
+                                    },
+                                    body: JSON.stringify({ config_key: 'GENERATION_ENABLED', config_value: newValue })
+                                })
+                                fetchConfigs()
+                            } catch (error) {
+                                alert('Errore aggiornamento stato: ' + error.message)
+                            }
                         }}
                         className={configs.find(c => c.config_key === 'GENERATION_ENABLED')?.config_value === 'true' ? 'btn-primary' : 'btn-secondary'}
                         style={{
@@ -138,7 +175,7 @@ function AdminPanel({ onExit }) {
                                     <tr key={config.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                                         <td style={{ padding: '1rem 0.5rem', fontWeight: 600 }}>{config.config_key}</td>
                                         <td style={{ padding: '1rem 0.5rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-                                            {config.config_key.includes('KEY') ? '••••••••••••' : config.config_value}
+                                            {config.config_key.includes('KEY') || config.config_key.includes('TOKEN') || config.config_key === 'ADMIN_PASSCODE' ? '••••••••••••' : config.config_value}
                                         </td>
                                         <td style={{ padding: '1rem 0.5rem', textAlign: 'right' }}>
                                             <button

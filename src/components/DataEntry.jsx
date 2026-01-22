@@ -9,60 +9,16 @@ function DataEntry({ onAddEntry, userRole }) {
         notes: ''
     })
 
-    const [tokens, setTokens] = useState({
-        hf: '',
-        openai: '',
-        replicate: ''
-    })
-    const [showTokenInput, setShowTokenInput] = useState(false)
+    // Removed tokens state and key fetching useEffect as they are now securely managed on the backend
+
     const [generatedImage, setGeneratedImage] = useState(null)
     const [imageBlob, setImageBlob] = useState(null)
     const [isGenerating, setIsGenerating] = useState(false)
     const [error, setError] = useState('')
+
+    // We assume generation is enabled by default for UI, backend will enforce check. 
+    // If backend returns "Generation Disabled" (403), we show it then.
     const [generationEnabled, setGenerationEnabled] = useState(true)
-
-    useEffect(() => {
-        const saved = {
-            hf: localStorage.getItem('hf_token') || '',
-            openai: localStorage.getItem('openai_token') || '',
-            replicate: localStorage.getItem('replicate_token') || ''
-        }
-
-        // Fetch keys and settings from Supabase
-        const fetchRemoteConfig = async () => {
-            const { data } = await supabase
-                .from('app_config')
-                .select('config_key, config_value')
-
-            if (data) {
-                const configMap = {}
-                data.forEach(item => {
-                    configMap[item.config_key] = item.config_value
-                })
-
-                // Update generation status
-                if (configMap['GENERATION_ENABLED'] !== undefined) {
-                    setGenerationEnabled(configMap['GENERATION_ENABLED'] === 'true')
-                }
-
-                // Inject keys from DB if matching our expected names
-                setTokens({
-                    hf: saved.hf || configMap['HF_TOKEN'] || '',
-                    openai: saved.openai || configMap['OPENAI_API_KEY'] || '',
-                    replicate: saved.replicate || configMap['REPLICATE_API_TOKEN'] || ''
-                })
-            } else {
-                setTokens(saved)
-            }
-        }
-
-        fetchRemoteConfig()
-    }, [])
-
-    const handleTokenChange = (provider, value) => {
-        setTokens(prev => ({ ...prev, [provider]: value }))
-        localStorage.setItem(`${provider}_token`, value)
-    }
 
     const handleGenerate = async () => {
         if (!formData.prompt) {
@@ -73,66 +29,41 @@ function DataEntry({ onAddEntry, userRole }) {
         setIsGenerating(true)
         setGeneratedImage(null)
         setError('')
+        setGenerationEnabled(true) // Reset enabling on new attempt
 
         try {
-            // Client-side logic for providers if keys are present
-            if (formData.provider === 'hf' && tokens.hf) {
-                const { HfInference } = await import('@huggingface/inference')
-                const hf = new HfInference(tokens.hf)
-                const response = await hf.textToImage({
-                    model: 'black-forest-labs/FLUX.1-dev',
-                    inputs: formData.prompt,
-                    parameters: { height: 1024, width: 1024 }
+            const response = await fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: formData.prompt,
+                    provider: formData.provider,
+                    model: formData.model
                 })
-                const imageUrl = URL.createObjectURL(response)
-                setGeneratedImage(imageUrl)
-                setImageBlob(response)
-            } else if (formData.provider === 'openai' && tokens.openai) {
-                const response = await fetch('https://api.openai.com/v1/images/generations', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${tokens.openai}`
-                    },
-                    body: JSON.stringify({
-                        model: 'dall-e-3',
-                        prompt: formData.prompt,
-                        n: 1,
-                        size: '1024x1024'
-                    })
-                })
-                const data = await response.json()
-                if (data.error) throw new Error(data.error.message)
-                const imageUrl = data.data[0].url
+            })
 
-                const imgRes = await fetch(imageUrl)
-                const blob = await imgRes.blob()
-                setGeneratedImage(imageUrl)
-                setImageBlob(blob)
-            } else {
-                // Fallback to Vercel Proxy
-                const response = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        prompt: formData.prompt,
-                        provider: formData.provider,
-                        model: formData.model
-                    })
-                })
+            const data = await response.json()
 
-                const data = await response.json()
-                if (data.error) throw new Error(data.error)
-
-                const imgRes = await fetch(data.imageUrl)
-                const blob = await imgRes.blob()
-
-                setGeneratedImage(data.imageUrl)
-                setImageBlob(blob)
+            if (!response.ok) {
+                if (response.status === 403) {
+                    setGenerationEnabled(false) // Disable UI feedback
+                    throw new Error('La generazione è stata disattivata dall\'amministratore.')
+                }
+                throw new Error(data.error || 'Errore nella generazione.')
             }
+
+            // Convert URL to Blob for storage uploading later (since our workflow saves blobs)
+            // Note: The backend returns a public URL or Base64. 
+            // If URL, we fetch it here to turn into Blob.
+            const imgRes = await fetch(data.imageUrl)
+            const blob = await imgRes.blob()
+
+            setGeneratedImage(data.imageUrl)
+            setImageBlob(blob)
+
         } catch (err) {
             console.error(err)
-            setError('Errore: ' + err.message)
+            setError(err.message)
         } finally {
             setIsGenerating(false)
         }
@@ -164,6 +95,7 @@ function DataEntry({ onAddEntry, userRole }) {
         setFormData(prev => ({ ...prev, prompt: '', notes: '' }))
         setGeneratedImage(null)
         setImageBlob(null)
+        setError('')
     }
 
     return (
@@ -171,53 +103,7 @@ function DataEntry({ onAddEntry, userRole }) {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Nuova Osservazione</h2>
-                {userRole === 'admin' && (
-                    <button
-                        onClick={() => setShowTokenInput(!showTokenInput)}
-                        style={{ background: 'transparent', color: 'var(--text-muted)', fontSize: '0.9rem', textDecoration: 'underline' }}
-                    >
-                        {showTokenInput ? 'Chiudi Impostazioni' : 'Gestisci Chiavi API'}
-                    </button>
-                )}
             </div>
-
-            {showTokenInput && (
-                <div style={{ background: '#F3F4F6', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', border: '1px solid #E5E7EB' }}>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem' }}>OpenAI API Key (DALL-E 3)</label>
-                        <input
-                            type="password"
-                            className="input-field"
-                            value={tokens.openai}
-                            onChange={(e) => handleTokenChange('openai', e.target.value)}
-                            placeholder="sk-..."
-                        />
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem' }}>Replicate API Token (Flux)</label>
-                        <input
-                            type="password"
-                            className="input-field"
-                            value={tokens.replicate}
-                            onChange={(e) => handleTokenChange('replicate', e.target.value)}
-                            placeholder="r8_..."
-                        />
-                    </div>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem' }}>Hugging Face Token</label>
-                        <input
-                            type="password"
-                            className="input-field"
-                            value={tokens.hf}
-                            onChange={(e) => handleTokenChange('hf', e.target.value)}
-                            placeholder="hf_..."
-                        />
-                    </div>
-                    <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: 'var(--text-muted)' }}>
-                        Le chiavi sono salvate solo localmente nel tuo browser.
-                    </p>
-                </div>
-            )}
 
             <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: '1.5rem' }}>
@@ -237,12 +123,12 @@ function DataEntry({ onAddEntry, userRole }) {
                             disabled={isGenerating || !generationEnabled}
                             style={{ minWidth: '130px', opacity: generationEnabled ? 1 : 0.5 }}
                         >
-                            {isGenerating ? '...' : (generationEnabled ? 'Genera Img' : 'API DISATTIVATE')}
+                            {isGenerating ? '...' : (generationEnabled ? 'Genera Img' : 'DISATTIVATO')}
                         </button>
                     </div>
-                    {!generationEnabled && (
+                    {error && (
                         <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-                            La generazione è stata temporaneamente disattivata dall'amministratore.
+                            {error}
                         </p>
                     )}
                 </div>

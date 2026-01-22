@@ -10,22 +10,24 @@ function WelcomeScreen({ onRoleSelect }) {
         e.preventDefault()
         setError('')
 
-        const { data: config, error: fetchError } = await supabase
-            .from('app_config')
-            .select('config_value')
-            .eq('config_key', 'ADMIN_PASSCODE')
-            .single()
+        try {
+            const response = await fetch('/api/verify-passcode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ passcode })
+            })
 
-        if (fetchError) {
-            setError('Errore di connessione. Verifica di aver eseguito lo script SQL.')
-            return
-        }
+            const data = await response.json()
 
-        if (passcode === config.config_value) {
-            onRoleSelect('admin')
-        } else {
-            setError('Parola d\'ordine errata.')
-            setPasscode('')
+            if (response.ok && data.success) {
+                onRoleSelect('admin', passcode)
+            } else {
+                setError('Parola d\'ordine errata.')
+                setPasscode('')
+            }
+        } catch (err) {
+            console.error(err)
+            setError('Errore di connessione al server.')
         }
     }
 

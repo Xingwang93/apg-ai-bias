@@ -1,28 +1,22 @@
--- SECURITY HARDENING SCRIPT
+-- SECURITY HARDENING: STRICT ROW LEVEL SECURITY FOR APP_CONFIG
+-- This script revokes all public/anon access to the configuration table.
+-- After applying this, only the Service Role (backend) can access this table.
 
--- 1. Restrict Storage uploads to images only and max 5MB
--- Note: This requires specific configuration in Supabase Storage settings which are best set via UI, 
--- but we can enforce RLS policies for better control.
+-- 1. DROP existing permissive policies
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.app_config;
+DROP POLICY IF EXISTS "Enable insert for all users" ON public.app_config;
+DROP POLICY IF EXISTS "Enable update for all users" ON public.app_config;
+DROP POLICY IF EXISTS "Enable delete for all users" ON public.app_config;
+DROP POLICY IF EXISTS "Allow public read access" ON public.app_config;
 
--- Drop old lax policies
-drop policy if exists "Public Insert" on storage.objects;
+-- 2. ENSURE RLS is enabled
+ALTER TABLE public.app_config ENABLE ROW LEVEL SECURITY;
 
--- New more restrictive policy for uploads
-create policy "Restrictive Public Insert"
-on storage.objects for insert
-to public
-with check (
-  bucket_id = 'observations' 
-  AND (storage.extension(name) = 'png' OR storage.extension(name) = 'jpg' OR storage.extension(name) = 'jpeg')
-  -- Max 5MB (5 * 1024 * 1024)
-  -- AND (octet_length(content) < 5242880) -- content length check is tricky in RLS, better handled in app + storage settings
-);
+-- 3. (Optional but recommended) Create a policy specifically for Service Role (though it bypasses RLS by default)
+-- No explicit policy needed for Service Role as it ignores RLS.
+-- Because no policies exist for 'anon' or 'authenticated', they will be denied access by default.
 
--- 2. Prevent table flooding with a basic check (limit text length)
-alter table public.observations 
-add constraint prompt_length_check check (char_length(prompt) < 1000),
-add constraint notes_length_check check (char_length(notes) < 2000);
-
--- 3. Optimization: Add indexes for better performance under load
-create index if not exists idx_observations_created_at on public.observations(created_at desc);
-create index if not exists idx_observations_model on public.observations(model);
+-- This ensures that:
+-- - Frontend cannot read API keys directly.
+-- - Frontend cannot modify configuration.
+-- - All access must flow through api/generate, api/verify-passcode, or api/config.

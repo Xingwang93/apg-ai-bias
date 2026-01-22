@@ -10,6 +10,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('input')
   const [entries, setEntries] = useState([])
   const [userRole, setUserRole] = useState(null) // null, 'participant', 'admin'
+  const [adminPasscode, setAdminPasscode] = useState(null)
 
   useEffect(() => {
     // 1. Fetch initial data
@@ -81,14 +82,21 @@ function App() {
 
   // If role is not selected, show welcome screen
   if (!userRole) {
-    return <WelcomeScreen onRoleSelect={setUserRole} />
+    return (
+      <WelcomeScreen
+        onRoleSelect={(role, code) => {
+          setUserRole(role)
+          if (code) setAdminPasscode(code)
+        }}
+      />
+    )
   }
 
   return (
     <div className="container">
       <header className="app-header">
         <button
-          onClick={() => setUserRole(null)}
+          onClick={() => { setUserRole(null); setAdminPasscode(null); }}
           className="back-btn"
         >
           ← Cambia Ruolo
@@ -106,7 +114,10 @@ function App() {
       </header>
 
       {userRole === 'admin' ? (
-        <AdminPanel onExit={() => setUserRole('participant')} />
+        <AdminPanel
+          onExit={() => setUserRole('participant')}
+          adminPasscode={adminPasscode}
+        />
       ) : (
         <>
           <nav className="nav-tabs">
