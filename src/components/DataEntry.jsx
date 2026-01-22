@@ -106,9 +106,9 @@ function DataEntry({ onAddEntry, userRole }) {
             </div>
 
             <form onSubmit={handleSubmit}>
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Prompt Utilizzato</label>
-                    <div className="prompt-container" style={{ display: 'flex', gap: '0.5rem' }}>
+                <div className="mb-4">
+                    <label className="text-muted mb-2" style={{ display: 'block' }}>Prompt Utilizzato</label>
+                    <div className="input-group" style={{ display: 'flex', gap: '0.8rem' }}>
                         <input
                             type="text"
                             className="input-field"
@@ -122,10 +122,8 @@ function DataEntry({ onAddEntry, userRole }) {
                             onClick={handleGenerate}
                             disabled={isGenerating || !generationEnabled}
                             style={{
-                                minWidth: '140px',
-                                opacity: generationEnabled ? 1 : 0.5,
-                                position: 'relative',
-                                overflow: 'hidden'
+                                minWidth: '150px',
+                                opacity: generationEnabled ? 1 : 0.5
                             }}
                         >
                             {isGenerating ? (
@@ -134,91 +132,27 @@ function DataEntry({ onAddEntry, userRole }) {
                                 </span>
                             ) : (
                                 <>
-                                    <span style={{ marginRight: '8px' }}>✨</span>
-                                    {generationEnabled ? 'Genera Img' : 'DISATTIVATO'}
+                                    <span>✨</span>
+                                    {generationEnabled ? 'Genera' : 'API OFF'}
                                 </>
                             )}
                         </button>
                     </div>
-                    <style>{`
-                        @media (max-width: 600px) {
-                            .prompt-container {
-                                flex-direction: column;
-                            }
-                            .btn-premium {
-                                width: 100%;
-                            }
-                        }
-                        .btn-premium {
-                            background: linear-gradient(135deg, #FF6600 0%, #FF9966 100%);
-                            color: white;
-                            border: none;
-                            padding: 0.8rem 1.5rem;
-                            border-radius: var(--radius-sm);
-                            font-weight: 700;
-                            font-family: 'Outfit', sans-serif;
-                            cursor: pointer;
-                            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-                            box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3);
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            text-transform: uppercase;
-                            letter-spacing: 0.05em;
-                            font-size: 0.85rem;
-                        }
-
-                        .btn-premium:hover:not(:disabled) {
-                            transform: translateY(-2px) scale(1.02);
-                            box-shadow: 0 6px 20px rgba(255, 102, 0, 0.4);
-                            background: linear-gradient(135deg, #FF7722 0%, #FFAA77 100%);
-                        }
-
-                        .btn-premium:active:not(:disabled) {
-                            transform: translateY(0) scale(0.98);
-                        }
-
-                        .btn-premium:disabled {
-                            background: #9CA3AF;
-                            box-shadow: none;
-                            cursor: not-allowed;
-                        }
-
-                        .loader-dots span {
-                            animation: blink 1.4s infinite both;
-                            font-size: 1.5rem;
-                            line-height: 0;
-                        }
-
-                        .loader-dots span:nth-child(2) { animation-delay: 0.2s; }
-                        .loader-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-                        @keyframes blink {
-                            0% { opacity: 0.2; }
-                            20% { opacity: 1; }
-                            100% { opacity: 0.2; }
-                        }
-                    `}</style>
-                    {error && (
-                        <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-                            {error}
-                        </p>
-                    )}
                 </div>
 
                 <div style={{
-                    minHeight: '300px',
-                    background: '#F9FAFB',
+                    minHeight: '280px',
+                    background: '#F3F4F6',
                     borderRadius: 'var(--radius-sm)',
                     marginBottom: '1.5rem',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '2px dashed #E5E7EB',
+                    border: '2px dashed #D1D5DB',
                     overflow: 'hidden',
                     position: 'relative'
                 }}>
-                    {isGenerating && <span style={{ color: 'var(--secondary)' }}>Generazione in corso...</span>}
+                    {isGenerating && <span style={{ color: 'var(--secondary)', fontWeight: 600 }}>Generazione in corso...</span>}
                     {error && <span style={{ color: '#ef4444', padding: '1rem', textAlign: 'center' }}>{error}</span>}
 
                     {!isGenerating && !generatedImage && !error && (
@@ -231,14 +165,14 @@ function DataEntry({ onAddEntry, userRole }) {
                         <img
                             src={generatedImage}
                             alt="Risultato Generato"
-                            style={{ width: '100%', height: 'auto', display: 'block' }}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         />
                     )}
                 </div>
 
                 <div className="grid-cols-2" style={{ marginBottom: '1.5rem' }}>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Provider / Modello</label>
+                        <label className="text-muted mb-2" style={{ display: 'block' }}>Provider / Modello</label>
                         <select
                             className="input-field"
                             value={`${formData.provider}:${formData.model}`}
@@ -255,7 +189,7 @@ function DataEntry({ onAddEntry, userRole }) {
                     </div>
 
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Genere Percepito</label>
+                        <label className="text-muted mb-2" style={{ display: 'block' }}>Genere Percepito</label>
                         <select
                             className="input-field"
                             value={formData.gender_bias}
@@ -270,17 +204,18 @@ function DataEntry({ onAddEntry, userRole }) {
                 </div>
 
                 <div style={{ marginBottom: '2rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Note / Altri Bias</label>
+                    <label className="text-muted mb-2" style={{ display: 'block' }}>Note / Altri Bias</label>
                     <textarea
                         className="input-field"
                         rows="3"
                         placeholder="Note opzionali..."
                         value={formData.notes}
                         onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        style={{ height: 'auto' }}
                     />
                 </div>
 
-                <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={!imageBlob || isGenerating}>
+                <button type="submit" className="btn-premium" style={{ width: '100%', background: 'var(--secondary)' }} disabled={!imageBlob || isGenerating}>
                     Salva Osservazione
                 </button>
             </form>

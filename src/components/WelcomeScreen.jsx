@@ -33,9 +33,9 @@ function WelcomeScreen({ onRoleSelect }) {
 
     if (showAdminEntry) {
         return (
-            <div className="card" style={{ maxWidth: '400px', margin: '4rem auto', textAlign: 'center' }}>
-                <h2>Accesso Admin</h2>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Inserisci la parola d'ordine</p>
+            <div className="glass-card" style={{ maxWidth: '400px', margin: 'clamp(2rem, 10vh, 6rem) auto', textAlign: 'center' }}>
+                <h2 className="mb-2">Accesso Admin</h2>
+                <p className="text-muted mb-4">Inserisci la parola d'ordine</p>
 
                 <form onSubmit={handleAdminVerify}>
                     <input
@@ -43,16 +43,16 @@ function WelcomeScreen({ onRoleSelect }) {
                         value={passcode}
                         onChange={(e) => setPasscode(e.target.value)}
                         placeholder="Parola d'ordine"
-                        style={{ marginBottom: '1rem', width: '100%', padding: '0.8rem', borderRadius: 'var(--radius-sm)', border: '1px solid #E5E7EB' }}
+                        className="input-field mb-4"
                         autoFocus
                     />
-                    {error && <p style={{ color: 'red', fontSize: '0.9rem', marginBottom: '1rem' }}>{error}</p>}
+                    {error && <p style={{ color: 'var(--error)', fontSize: '0.9rem', marginBottom: '1rem' }}>{error}</p>}
 
                     <div style={{ display: 'flex', gap: '1rem' }}>
                         <button type="button" onClick={() => setShowAdminEntry(false)} className="btn-secondary" style={{ flex: 1 }}>
                             Indietro
                         </button>
-                        <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                        <button type="submit" className="btn-premium" style={{ flex: 1 }}>
                             Entra
                         </button>
                     </div>
@@ -62,65 +62,48 @@ function WelcomeScreen({ onRoleSelect }) {
     }
 
     return (
-        <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center' }}>
-            <img src="/logo-apg.png" alt="APG Logo" style={{ height: '120px', width: 'auto', marginBottom: '2rem' }} />
-            <h1 style={{ marginBottom: '1rem' }}>Benvenuto al Workshop Bias AI</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', maxWidth: '600px', marginBottom: '3rem' }}>
+        <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '85vh', textAlign: 'center' }}>
+            <img src="/logo-apg.png" alt="APG Logo" style={{ height: 'clamp(80px, 15vw, 120px)', width: 'auto', marginBottom: '2rem' }} />
+            <h1 className="mb-4">Benvenuto al Workshop Bias AI</h1>
+            <p className="text-muted" style={{ fontSize: 'clamp(1rem, 4vw, 1.25rem)', maxWidth: '600px', marginBottom: '3rem' }}>
                 Unisciti a noi nell'esplorazione e analisi della parità di genere nei modelli di intelligenza artificiale generativa.
             </p>
 
-            <div className="role-container" style={{ display: 'flex', gap: '2rem', justifyContent: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', width: '100%', maxWidth: '800px' }}>
                 <button
                     onClick={() => onRoleSelect('participant')}
-                    className="card role-card"
+                    className="glass-card"
                     style={{
-                        padding: '2rem 3rem',
+                        padding: '2.5rem 1.5rem',
                         cursor: 'pointer',
-                        transition: 'transform 0.2s',
-                        border: '2px solid transparent',
-                        borderColor: 'transparent',
-                        minWidth: '280px'
+                        textAlign: 'center',
+                        border: '2px solid transparent'
                     }}
                     onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
                     onMouseOut={(e) => e.currentTarget.style.borderColor = 'transparent'}
                 >
                     <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👋</div>
-                    <h3 style={{ margin: 0 }}>Entra come Partecipante</h3>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Contribuisci all'indagine</p>
+                    <h3 className="mb-2">Partecipante</h3>
+                    <p className="text-muted">Contribuisci all'indagine registrando nuove osservazioni</p>
                 </button>
 
                 <button
                     onClick={() => setShowAdminEntry(true)}
-                    className="card role-card"
+                    className="glass-card"
                     style={{
-                        padding: '2rem 3rem',
+                        padding: '2.5rem 1.5rem',
                         cursor: 'pointer',
-                        transition: 'transform 0.2s',
-                        border: '2px solid transparent',
-                        borderColor: 'transparent',
-                        minWidth: '280px'
+                        textAlign: 'center',
+                        border: '2px solid transparent'
                     }}
                     onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--secondary)'}
                     onMouseOut={(e) => e.currentTarget.style.borderColor = 'transparent'}
                 >
                     <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🛡️</div>
-                    <h3 style={{ margin: 0 }}>Accesso Admin</h3>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Gestione sistema e chiavi</p>
+                    <h3 className="mb-2">Admin</h3>
+                    <p className="text-muted">Gestione sistema, chiavi API e monitoraggio globale</p>
                 </button>
             </div>
-            <style>{`
-                @media (max-width: 768px) {
-                    .role-container {
-                        flex-direction: column;
-                        width: 100%;
-                    }
-                    .role-card {
-                        width: 100%;
-                        min-width: unset !important;
-                        padding: 1.5rem !important;
-                    }
-                }
-            `}</style>
         </div>
     )
 }
