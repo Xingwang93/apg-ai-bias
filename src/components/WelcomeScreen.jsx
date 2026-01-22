@@ -69,16 +69,17 @@ function WelcomeScreen({ onRoleSelect }) {
                 Unisciti a noi nell'esplorazione e analisi della parità di genere nei modelli di intelligenza artificiale generativa.
             </p>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', justifyContent: 'center' }}>
+            <div className="role-container" style={{ display: 'flex', gap: '2rem', justifyContent: 'center' }}>
                 <button
                     onClick={() => onRoleSelect('participant')}
-                    className="card"
+                    className="card role-card"
                     style={{
                         padding: '2rem 3rem',
                         cursor: 'pointer',
                         transition: 'transform 0.2s',
                         border: '2px solid transparent',
-                        borderColor: 'transparent'
+                        borderColor: 'transparent',
+                        minWidth: '280px'
                     }}
                     onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
                     onMouseOut={(e) => e.currentTarget.style.borderColor = 'transparent'}
@@ -90,13 +91,14 @@ function WelcomeScreen({ onRoleSelect }) {
 
                 <button
                     onClick={() => setShowAdminEntry(true)}
-                    className="card"
+                    className="card role-card"
                     style={{
                         padding: '2rem 3rem',
                         cursor: 'pointer',
                         transition: 'transform 0.2s',
                         border: '2px solid transparent',
-                        borderColor: 'transparent'
+                        borderColor: 'transparent',
+                        minWidth: '280px'
                     }}
                     onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--secondary)'}
                     onMouseOut={(e) => e.currentTarget.style.borderColor = 'transparent'}
@@ -106,6 +108,19 @@ function WelcomeScreen({ onRoleSelect }) {
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Gestione sistema e chiavi</p>
                 </button>
             </div>
+            <style>{`
+                @media (max-width: 768px) {
+                    .role-container {
+                        flex-direction: column;
+                        width: 100%;
+                    }
+                    .role-card {
+                        width: 100%;
+                        min-width: unset !important;
+                        padding: 1.5rem !important;
+                    }
+                }
+            `}</style>
         </div>
     )
 }

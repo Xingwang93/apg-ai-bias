@@ -108,7 +108,7 @@ function DataEntry({ onAddEntry, userRole }) {
             <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: '1.5rem' }}>
                     <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Prompt Utilizzato</label>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div className="prompt-container" style={{ display: 'flex', gap: '0.5rem' }}>
                         <input
                             type="text"
                             className="input-field"
@@ -141,6 +141,14 @@ function DataEntry({ onAddEntry, userRole }) {
                         </button>
                     </div>
                     <style>{`
+                        @media (max-width: 600px) {
+                            .prompt-container {
+                                flex-direction: column;
+                            }
+                            .btn-premium {
+                                width: 100%;
+                            }
+                        }
                         .btn-premium {
                             background: linear-gradient(135deg, #FF6600 0%, #FF9966 100%);
                             color: white;
