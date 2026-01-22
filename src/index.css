@@ -1,0 +1,146 @@
+/* APG Brand Design System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;600;700&display=swap');
+
+:root {
+  /* Brand Palette */
+  --primary: #FF6600; /* APG Orange */
+  --secondary: #003399; /* European Blue */
+  
+  --bg-page: #FFFFFF; /* Clean White */
+  --bg-surface: #F5F5F7; /* Off-White */
+  
+  --text-main: #1F2937; /* Charcoal */
+  --text-muted: #6B7280; /* Grey */
+  --text-light: #FFFFFF;
+  
+  --success: #10B981; /* Growth Green */
+  
+  /* Spacing */
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Outfit', sans-serif;
+  color: var(--secondary); /* European Blue for Headers */
+}
+
+h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: var(--space-lg);
+  color: var(--primary); /* Orange for main title */
+}
+
+button {
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+/* Utilities */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+}
+
+/* Replaces old glass-card with APG Clean Card */
+.glass-card {
+  background: var(--bg-surface);
+  border: 1px solid #E5E7EB;
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md); /* Softer rounded button */
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-primary:hover {
+  background-color: #e65c00; /* Darker Orange */
+  transform: scale(1.02);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.input-field {
+  background: white;
+  border: 2px solid #E5E7EB;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  color: var(--text-main);
+  width: 100%;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.input-field:focus {
+  border-color: var(--secondary); /* Blue focus */
+  outline: none;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grid-cols-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+/* Tags */
+.tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.tag.male { background: #DBEAFE; color: #1E40AF; } /* Blue tint */
+.tag.female { background: #FCE7F3; color: #9D174D; } /* Pink tint */
+.tag.mixed { background: #F3E8FF; color: #6B21A8; } /* Purple tint */
