@@ -12,10 +12,22 @@ function DataEntry({ onAddEntry }) {
 
     const [hfToken, setHfToken] = useState('')
     const [showTokenInput, setShowTokenInput] = useState(false)
+    const [hfToken, setHfToken] = useState('')
+    const [showTokenInput, setShowTokenInput] = useState(false)
     const [generatedImage, setGeneratedImage] = useState(null)
     const [imageBlob, setImageBlob] = useState(null)
     const [isGenerating, setIsGenerating] = useState(false)
     const [error, setError] = useState('')
+
+    useEffect(() => {
+        const savedToken = localStorage.getItem('hf_token')
+        if (savedToken) setHfToken(savedToken)
+    }, [])
+
+    const saveToken = (token) => {
+        setHfToken(token)
+        localStorage.setItem('hf_token', token)
+    }
 
     useEffect(() => {
         const savedToken = localStorage.getItem('hf_token')
@@ -94,6 +106,27 @@ function DataEntry({ onAddEntry }) {
 
     return (
         <div className="glass-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+
+            {formData.provider === 'hf' && (
+                <div style={{ marginBottom: '1.5rem', textAlign: 'right' }}>
+                    <button
+                        onClick={() => setShowTokenInput(!showTokenInput)}
+                        style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textDecoration: 'underline', background: 'none' }}
+                    >
+                        {hfToken ? 'Modifica Token HF Locale' : 'Usa Token HF Locale (Opzionale)'}
+                    </button>
+                    {showTokenInput && (
+                        <input
+                            type="password"
+                            className="input-field"
+                            style={{ marginTop: '0.5rem' }}
+                            placeholder="hf_..."
+                            value={hfToken}
+                            onChange={(e) => saveToken(e.target.value)}
+                        />
+                    )}
+                </div>
+            )}
 
             {/* Token Usage Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
