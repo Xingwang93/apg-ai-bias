@@ -4,8 +4,9 @@ import { HfInference } from '@huggingface/inference'
 function DataEntry({ onAddEntry }) {
     const [formData, setFormData] = useState({
         prompt: '',
-        model: 'Hugging Face (FLUX.1)',
-        genderBias: 'Male',
+        model: 'FLUX.1 (Hugging Face)',
+        provider: 'hf', // 'hf', 'openai', 'google', 'replicate'
+        gender_bias: 'Male',
         notes: ''
     })
 
@@ -44,23 +45,29 @@ function DataEntry({ onAddEntry }) {
         setError('')
 
         try {
-            const hf = new HfInference(hfToken)
-
-            const response = await hf.textToImage({
-                model: 'black-forest-labs/FLUX.1-dev',
-                inputs: formData.prompt,
-                parameters: {
-                    height: 1024,
-                    width: 1024,
-                }
+            // New logic: Use the Vercel API proxy if not using local HF token
+            const response = await fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: formData.prompt,
+                    provider: formData.provider,
+                    model: formData.model
+                })
             })
 
-            const imageUrl = URL.createObjectURL(response)
-            setGeneratedImage(imageUrl)
-            setImageBlob(response) // Store the actual blob for upload
+            const data = await response.json()
+            if (data.error) throw new Error(data.error)
+
+            // Since our proxy returns a URL, we need to fetch it to get a blob for Supabase
+            const imgRes = await fetch(data.imageUrl)
+            const blob = await imgRes.blob()
+
+            setGeneratedImage(data.imageUrl)
+            setImageBlob(blob)
         } catch (err) {
             console.error(err)
-            setError('Errore nella generazione: ' + (err.message || 'Controlla il token o riprova.'))
+            setError('Errore: ' + err.message)
         } finally {
             setIsGenerating(false)
         }
@@ -171,17 +178,19 @@ function DataEntry({ onAddEntry }) {
 
                 <div className="grid-cols-2" style={{ marginBottom: '1.5rem' }}>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Modello AI</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Provider / Modello</label>
                         <select
                             className="input-field"
-                            value={formData.model}
-                            onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                            value={`${formData.provider}:${formData.model}`}
+                            onChange={(e) => {
+                                const [provider, model] = e.target.value.split(':')
+                                setFormData({ ...formData, provider, model })
+                            }}
                         >
-                            <option value="Hugging Face (FLUX.1)">Hugging Face (FLUX.1)</option>
-                            <option value="Gemini">Gemini</option>
-                            <option value="ChatGPT/DALL-E">ChatGPT/DALL-E</option>
-                            <option value="Grok">Grok</option>
-                            <option value="Altro">Altro</option>
+                            <option value="hf:FLUX.1 (Hugging Face)">Hugging Face (FLUX.1)</option>
+                            <option value="openai:DALL-E 3">OpenAI (DALL-E 3)</option>
+                            <option value="replicate:Flux Dev">Replicate (Flux Dev)</option>
+                            <option value="google:Imagen 3">Google (Imagen 3)</option>
                         </select>
                     </div>
 
@@ -189,8 +198,8 @@ function DataEntry({ onAddEntry }) {
                         <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Genere Percepito</label>
                         <select
                             className="input-field"
-                            value={formData.genderBias}
-                            onChange={(e) => setFormData({ ...formData, genderBias: e.target.value })}
+                            value={formData.gender_bias}
+                            onChange={(e) => setFormData({ ...formData, gender_bias: e.target.value })}
                         >
                             <option value="Male">Prevalentemente Maschile</option>
                             <option value="Female">Prevalentemente Femminile</option>

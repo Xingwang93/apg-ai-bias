@@ -119,3 +119,5 @@ Desktop.ini
 
 # MacOS
 .DS_Store
+
+.vercel
