@@ -78,12 +78,15 @@ function App() {
 
   return (
     <div className="container">
-      <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h1>Esploratore Bias AI</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Analisi della Parità di Genere nella GenAI</p>
-        <p style={{ fontSize: '0.9rem', color: 'var(--secondary)', marginTop: '0.5rem' }}>
-          Osservazioni Totali: {entries.length}
-        </p>
+      <header style={{ textAlign: 'center', marginBottom: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+        <img src="/logo-apg.png" alt="APG Logo" style={{ height: '80px', width: 'auto' }} />
+        <div>
+          <h1 style={{ marginBottom: '0.5rem' }}>Esploratore Bias AI</h1>
+          <p style={{ color: 'var(--text-muted)' }}>Analisi della Parità di Genere nella GenAI</p>
+          <p style={{ fontSize: '0.9rem', color: 'var(--secondary)', marginTop: '0.5rem', fontWeight: 600 }}>
+            Osservazioni Totali: {entries.length}
+          </p>
+        </div>
       </header>
 
       <nav style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '2rem' }}>

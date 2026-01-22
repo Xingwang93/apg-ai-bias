@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react'
-import { HfInference } from '@huggingface/inference'
 
 function DataEntry({ onAddEntry }) {
     const [formData, setFormData] = useState({
         prompt: '',
         model: 'FLUX.1 (Hugging Face)',
-        provider: 'hf', // 'hf', 'openai', 'google', 'replicate'
+        provider: 'hf',
         gender_bias: 'Male',
         notes: ''
     })
 
-    const [hfToken, setHfToken] = useState('')
-    const [showTokenInput, setShowTokenInput] = useState(false)
-    const [hfToken, setHfToken] = useState('')
+    const [tokens, setTokens] = useState({
+        hf: '',
+        openai: '',
+        replicate: ''
+    })
     const [showTokenInput, setShowTokenInput] = useState(false)
     const [generatedImage, setGeneratedImage] = useState(null)
     const [imageBlob, setImageBlob] = useState(null)
@@ -20,35 +21,22 @@ function DataEntry({ onAddEntry }) {
     const [error, setError] = useState('')
 
     useEffect(() => {
-        const savedToken = localStorage.getItem('hf_token')
-        if (savedToken) setHfToken(savedToken)
+        const saved = {
+            hf: localStorage.getItem('hf_token') || '',
+            openai: localStorage.getItem('openai_token') || '',
+            replicate: localStorage.getItem('replicate_token') || ''
+        }
+        setTokens(saved)
     }, [])
 
-    const saveToken = (token) => {
-        setHfToken(token)
-        localStorage.setItem('hf_token', token)
-    }
-
-    useEffect(() => {
-        const savedToken = localStorage.getItem('hf_token')
-        if (savedToken) setHfToken(savedToken)
-        else setShowTokenInput(true)
-    }, [])
-
-    const saveToken = (token) => {
-        setHfToken(token)
-        localStorage.setItem('hf_token', token)
-        setShowTokenInput(false)
+    const handleTokenChange = (provider, value) => {
+        setTokens(prev => ({ ...prev, [provider]: value }))
+        localStorage.setItem(`${provider}_token`, value)
     }
 
     const handleGenerate = async () => {
         if (!formData.prompt) {
             alert('Inserisci prima un prompt!')
-            return
-        }
-        if (!hfToken) {
-            alert('Devi impostare il tuo Token Hugging Face prima!')
-            setShowTokenInput(true)
             return
         }
 
@@ -57,26 +45,61 @@ function DataEntry({ onAddEntry }) {
         setError('')
 
         try {
-            // New logic: Use the Vercel API proxy if not using local HF token
-            const response = await fetch('/api/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    prompt: formData.prompt,
-                    provider: formData.provider,
-                    model: formData.model
+            // Client-side logic for providers if keys are present
+            if (formData.provider === 'hf' && tokens.hf) {
+                const { HfInference } = await import('@huggingface/inference')
+                const hf = new HfInference(tokens.hf)
+                const response = await hf.textToImage({
+                    model: 'black-forest-labs/FLUX.1-dev',
+                    inputs: formData.prompt,
+                    parameters: { height: 1024, width: 1024 }
                 })
-            })
+                const imageUrl = URL.createObjectURL(response)
+                setGeneratedImage(imageUrl)
+                setImageBlob(response)
+            } else if (formData.provider === 'openai' && tokens.openai) {
+                const response = await fetch('https://api.openai.com/v1/images/generations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${tokens.openai}`
+                    },
+                    body: JSON.stringify({
+                        model: 'dall-e-3',
+                        prompt: formData.prompt,
+                        n: 1,
+                        size: '1024x1024'
+                    })
+                })
+                const data = await response.json()
+                if (data.error) throw new Error(data.error.message)
+                const imageUrl = data.data[0].url
 
-            const data = await response.json()
-            if (data.error) throw new Error(data.error)
+                const imgRes = await fetch(imageUrl)
+                const blob = await imgRes.blob()
+                setGeneratedImage(imageUrl)
+                setImageBlob(blob)
+            } else {
+                // Fallback to Vercel Proxy
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: formData.prompt,
+                        provider: formData.provider,
+                        model: formData.model
+                    })
+                })
 
-            // Since our proxy returns a URL, we need to fetch it to get a blob for Supabase
-            const imgRes = await fetch(data.imageUrl)
-            const blob = await imgRes.blob()
+                const data = await response.json()
+                if (data.error) throw new Error(data.error)
 
-            setGeneratedImage(data.imageUrl)
-            setImageBlob(blob)
+                const imgRes = await fetch(data.imageUrl)
+                const blob = await imgRes.blob()
+
+                setGeneratedImage(data.imageUrl)
+                setImageBlob(blob)
+            }
         } catch (err) {
             console.error(err)
             setError('Errore: ' + err.message)
@@ -87,19 +110,14 @@ function DataEntry({ onAddEntry }) {
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        if (!formData.prompt) return
+        if (!formData.prompt || !imageBlob) {
+            alert('Genera prima un immagine!')
+            return
+        }
 
-        onAddEntry({
-            ...formData
-        }, imageBlob)
+        onAddEntry({ ...formData }, imageBlob)
 
-        // Reset form
-        setFormData({
-            prompt: '',
-            model: 'Hugging Face (FLUX.1)',
-            genderBias: 'Male',
-            notes: ''
-        })
+        setFormData(prev => ({ ...prev, prompt: '', notes: '' }))
         setGeneratedImage(null)
         setImageBlob(null)
     }
@@ -107,50 +125,50 @@ function DataEntry({ onAddEntry }) {
     return (
         <div className="glass-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
 
-            {formData.provider === 'hf' && (
-                <div style={{ marginBottom: '1.5rem', textAlign: 'right' }}>
-                    <button
-                        onClick={() => setShowTokenInput(!showTokenInput)}
-                        style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textDecoration: 'underline', background: 'none' }}
-                    >
-                        {hfToken ? 'Modifica Token HF Locale' : 'Usa Token HF Locale (Opzionale)'}
-                    </button>
-                    {showTokenInput && (
-                        <input
-                            type="password"
-                            className="input-field"
-                            style={{ marginTop: '0.5rem' }}
-                            placeholder="hf_..."
-                            value={hfToken}
-                            onChange={(e) => saveToken(e.target.value)}
-                        />
-                    )}
-                </div>
-            )}
-
-            {/* Token Usage Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Nuova Osservazione</h2>
                 <button
                     onClick={() => setShowTokenInput(!showTokenInput)}
                     style={{ background: 'transparent', color: 'var(--text-muted)', fontSize: '0.9rem', textDecoration: 'underline' }}
                 >
-                    {hfToken ? 'Modifica Token' : 'Imposta Token'}
+                    {showTokenInput ? 'Chiudi Impostazioni' : 'Gestisci Chiavi API'}
                 </button>
             </div>
 
             {showTokenInput && (
                 <div style={{ background: '#F3F4F6', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', border: '1px solid #E5E7EB' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Token Hugging Face (Scrittura)</label>
-                    <input
-                        type="password"
-                        className="input-field"
-                        value={hfToken}
-                        onChange={(e) => saveToken(e.target.value)}
-                        placeholder="hf_..."
-                    />
-                    <p style={{ fontSize: '0.8rem', marginTop: '0.5rem', opacity: 0.7 }}>
-                        Ottienilo gratis su <a href="https://huggingface.co/settings/tokens" target="_blank" style={{ color: 'var(--secondary)' }}>huggingface.co/settings/tokens</a>
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem' }}>OpenAI API Key (DALL-E 3)</label>
+                        <input
+                            type="password"
+                            className="input-field"
+                            value={tokens.openai}
+                            onChange={(e) => handleTokenChange('openai', e.target.value)}
+                            placeholder="sk-..."
+                        />
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem' }}>Replicate API Token (Flux)</label>
+                        <input
+                            type="password"
+                            className="input-field"
+                            value={tokens.replicate}
+                            onChange={(e) => handleTokenChange('replicate', e.target.value)}
+                            placeholder="r8_..."
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem' }}>Hugging Face Token</label>
+                        <input
+                            type="password"
+                            className="input-field"
+                            value={tokens.hf}
+                            onChange={(e) => handleTokenChange('hf', e.target.value)}
+                            placeholder="hf_..."
+                        />
+                    </div>
+                    <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: 'var(--text-muted)' }}>
+                        Le chiavi sono salvate solo localmente nel tuo browser.
                     </p>
                 </div>
             )}
@@ -178,7 +196,6 @@ function DataEntry({ onAddEntry }) {
                     </div>
                 </div>
 
-                {/* Image Preview Area */}
                 <div style={{
                     minHeight: '300px',
                     background: '#F9FAFB',
@@ -191,7 +208,7 @@ function DataEntry({ onAddEntry }) {
                     overflow: 'hidden',
                     position: 'relative'
                 }}>
-                    {isGenerating && <span style={{ color: 'var(--secondary)' }}>Generazione in corso (FLUX.1)...</span>}
+                    {isGenerating && <span style={{ color: 'var(--secondary)' }}>Generazione in corso...</span>}
                     {error && <span style={{ color: '#ef4444', padding: '1rem', textAlign: 'center' }}>{error}</span>}
 
                     {!isGenerating && !generatedImage && !error && (
@@ -247,13 +264,13 @@ function DataEntry({ onAddEntry }) {
                     <textarea
                         className="input-field"
                         rows="3"
-                        placeholder="es. Notata anche mancanza di diversità etnica..."
+                        placeholder="Note opzionali..."
                         value={formData.notes}
                         onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     />
                 </div>
 
-                <button type="submit" className="btn-primary" style={{ width: '100%' }}>
+                <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={!imageBlob || isGenerating}>
                     Salva Osservazione
                 </button>
             </form>
