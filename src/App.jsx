@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react'
 import DataEntry from './components/DataEntry'
 import Dashboard from './components/Dashboard'
 import Gallery from './components/Gallery'
+import WelcomeScreen from './components/WelcomeScreen'
+import AdminPanel from './components/AdminPanel'
 import { supabase } from './lib/supabaseClient'
 
 function App() {
   const [activeTab, setActiveTab] = useState('input')
   const [entries, setEntries] = useState([])
+  const [userRole, setUserRole] = useState(null) // null, 'participant', 'admin'
 
   useEffect(() => {
     // 1. Fetch initial data
@@ -76,10 +79,21 @@ function App() {
     }
   }
 
+  // If role is not selected, show welcome screen
+  if (!userRole) {
+    return <WelcomeScreen onRoleSelect={setUserRole} />
+  }
+
   return (
     <div className="container">
-      <header style={{ textAlign: 'center', marginBottom: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+      <header style={{ textAlign: 'center', marginBottom: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', position: 'relative' }}>
         <img src="/logo-apg.png" alt="APG Logo" style={{ height: '80px', width: 'auto' }} />
+        <button
+          onClick={() => setUserRole(null)}
+          style={{ position: 'absolute', top: 0, left: 0, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem' }}
+        >
+          ← Cambia Ruolo
+        </button>
         <div>
           <h1 style={{ marginBottom: '0.5rem' }}>Esploratore Bias AI</h1>
           <p style={{ color: 'var(--text-muted)' }}>Analisi della Parità di Genere nella GenAI</p>
@@ -89,62 +103,68 @@ function App() {
         </div>
       </header>
 
-      <nav style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '2rem' }}>
-        <button
-          onClick={() => setActiveTab('input')}
-          className={activeTab === 'input' ? 'btn-primary' : ''}
-          style={{
-            background: activeTab === 'input' ? 'var(--primary)' : 'white',
-            color: activeTab === 'input' ? 'white' : 'var(--text-main)',
-            border: activeTab === 'input' ? 'none' : '1px solid #E5E7EB',
-            padding: '0.5rem 1.5rem',
-            borderRadius: 'var(--radius-sm)',
-            fontWeight: 600
-          }}
-        >
-          Inserisci
-        </button>
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={activeTab === 'dashboard' ? 'btn-primary' : ''}
-          style={{
-            background: activeTab === 'dashboard' ? 'var(--primary)' : 'white',
-            color: activeTab === 'dashboard' ? 'white' : 'var(--text-main)',
-            border: activeTab === 'dashboard' ? 'none' : '1px solid #E5E7EB',
-            padding: '0.5rem 1.5rem',
-            borderRadius: 'var(--radius-sm)',
-            fontWeight: 600
-          }}
-        >
-          Statistiche
-        </button>
-        <button
-          onClick={() => setActiveTab('gallery')}
-          className={activeTab === 'gallery' ? 'btn-primary' : ''}
-          style={{
-            background: activeTab === 'gallery' ? 'var(--primary)' : 'white',
-            color: activeTab === 'gallery' ? 'white' : 'var(--text-main)',
-            border: activeTab === 'gallery' ? 'none' : '1px solid #E5E7EB',
-            padding: '0.5rem 1.5rem',
-            borderRadius: 'var(--radius-sm)',
-            fontWeight: 600
-          }}
-        >
-          Galleria
-        </button>
-      </nav>
+      {userRole === 'admin' ? (
+        <AdminPanel onExit={() => setUserRole('participant')} />
+      ) : (
+        <>
+          <nav style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '2rem' }}>
+            <button
+              onClick={() => setActiveTab('input')}
+              className={activeTab === 'input' ? 'btn-primary' : ''}
+              style={{
+                background: activeTab === 'input' ? 'var(--primary)' : 'white',
+                color: activeTab === 'input' ? 'white' : 'var(--text-main)',
+                border: activeTab === 'input' ? 'none' : '1px solid #E5E7EB',
+                padding: '0.5rem 1.5rem',
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: 600
+              }}
+            >
+              Inserisci
+            </button>
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={activeTab === 'dashboard' ? 'btn-primary' : ''}
+              style={{
+                background: activeTab === 'dashboard' ? 'var(--primary)' : 'white',
+                color: activeTab === 'dashboard' ? 'white' : 'var(--text-main)',
+                border: activeTab === 'dashboard' ? 'none' : '1px solid #E5E7EB',
+                padding: '0.5rem 1.5rem',
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: 600
+              }}
+            >
+              Statistiche
+            </button>
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className={activeTab === 'gallery' ? 'btn-primary' : ''}
+              style={{
+                background: activeTab === 'gallery' ? 'var(--primary)' : 'white',
+                color: activeTab === 'gallery' ? 'white' : 'var(--text-main)',
+                border: activeTab === 'gallery' ? 'none' : '1px solid #E5E7EB',
+                padding: '0.5rem 1.5rem',
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: 600
+              }}
+            >
+              Galleria
+            </button>
+          </nav>
 
-      <main>
-        {activeTab === 'input' && (
-          <DataEntry onAddEntry={addEntry} />
-        )}
-        {activeTab === 'dashboard' && (
-          <Dashboard entries={entries} />
-        )}
-        {activeTab === 'gallery' && (
-          <Gallery entries={entries} />
-        )}
-      </main>
+          <main>
+            {activeTab === 'input' && (
+              <DataEntry onAddEntry={addEntry} userRole={userRole} />
+            )}
+            {activeTab === 'dashboard' && (
+              <Dashboard entries={entries} />
+            )}
+            {activeTab === 'gallery' && (
+              <Gallery entries={entries} />
+            )}
+          </main>
+        </>
+      )}
     </div>
   )
 }

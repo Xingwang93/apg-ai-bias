@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-function DataEntry({ onAddEntry }) {
+function DataEntry({ onAddEntry, userRole }) {
     const [formData, setFormData] = useState({
         prompt: '',
         model: 'FLUX.1 (Hugging Face)',
@@ -19,6 +19,7 @@ function DataEntry({ onAddEntry }) {
     const [imageBlob, setImageBlob] = useState(null)
     const [isGenerating, setIsGenerating] = useState(false)
     const [error, setError] = useState('')
+    const [generationEnabled, setGenerationEnabled] = useState(true)
 
     useEffect(() => {
         const saved = {
@@ -26,7 +27,36 @@ function DataEntry({ onAddEntry }) {
             openai: localStorage.getItem('openai_token') || '',
             replicate: localStorage.getItem('replicate_token') || ''
         }
-        setTokens(saved)
+
+        // Fetch keys and settings from Supabase
+        const fetchRemoteConfig = async () => {
+            const { data } = await supabase
+                .from('app_config')
+                .select('config_key, config_value')
+
+            if (data) {
+                const configMap = {}
+                data.forEach(item => {
+                    configMap[item.config_key] = item.config_value
+                })
+
+                // Update generation status
+                if (configMap['GENERATION_ENABLED'] !== undefined) {
+                    setGenerationEnabled(configMap['GENERATION_ENABLED'] === 'true')
+                }
+
+                // Inject keys from DB if matching our expected names
+                setTokens({
+                    hf: saved.hf || configMap['HF_TOKEN'] || '',
+                    openai: saved.openai || configMap['OPENAI_API_KEY'] || '',
+                    replicate: saved.replicate || configMap['REPLICATE_API_TOKEN'] || ''
+                })
+            } else {
+                setTokens(saved)
+            }
+        }
+
+        fetchRemoteConfig()
     }, [])
 
     const handleTokenChange = (provider, value) => {
@@ -110,12 +140,26 @@ function DataEntry({ onAddEntry }) {
 
     const handleSubmit = (e) => {
         e.preventDefault()
+
+        // Frontend Validation
         if (!formData.prompt || !imageBlob) {
             alert('Genera prima un immagine!')
             return
         }
 
-        onAddEntry({ ...formData }, imageBlob)
+        if (formData.prompt.length > 500) {
+            alert('Prompt troppo lungo (max 500 caratteri)')
+            return
+        }
+
+        // Sanitization: Remove potential HTML tags to prevent edge-case XSS
+        const sanitizedData = {
+            ...formData,
+            prompt: formData.prompt.replace(/<[^>]*>?/gm, ''),
+            notes: formData.notes.replace(/<[^>]*>?/gm, '')
+        }
+
+        onAddEntry(sanitizedData, imageBlob)
 
         setFormData(prev => ({ ...prev, prompt: '', notes: '' }))
         setGeneratedImage(null)
@@ -127,12 +171,14 @@ function DataEntry({ onAddEntry }) {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Nuova Osservazione</h2>
-                <button
-                    onClick={() => setShowTokenInput(!showTokenInput)}
-                    style={{ background: 'transparent', color: 'var(--text-muted)', fontSize: '0.9rem', textDecoration: 'underline' }}
-                >
-                    {showTokenInput ? 'Chiudi Impostazioni' : 'Gestisci Chiavi API'}
-                </button>
+                {userRole === 'admin' && (
+                    <button
+                        onClick={() => setShowTokenInput(!showTokenInput)}
+                        style={{ background: 'transparent', color: 'var(--text-muted)', fontSize: '0.9rem', textDecoration: 'underline' }}
+                    >
+                        {showTokenInput ? 'Chiudi Impostazioni' : 'Gestisci Chiavi API'}
+                    </button>
+                )}
             </div>
 
             {showTokenInput && (
@@ -188,12 +234,17 @@ function DataEntry({ onAddEntry }) {
                             type="button"
                             className="btn-primary"
                             onClick={handleGenerate}
-                            disabled={isGenerating}
-                            style={{ minWidth: '130px' }}
+                            disabled={isGenerating || !generationEnabled}
+                            style={{ minWidth: '130px', opacity: generationEnabled ? 1 : 0.5 }}
                         >
-                            {isGenerating ? '...' : 'Genera Img'}
+                            {isGenerating ? '...' : (generationEnabled ? 'Genera Img' : 'API DISATTIVATE')}
                         </button>
                     </div>
+                    {!generationEnabled && (
+                        <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                            La generazione è stata temporaneamente disattivata dall'amministratore.
+                        </p>
+                    )}
                 </div>
 
                 <div style={{
