@@ -129,7 +129,8 @@ function AdminPanel({ onExit, adminPasscode }) {
                     💡 <strong>Nomi Chiavi Standard:</strong> Per far funzionare i modelli, usa questi nomi precisi:<br />
                     - <code>OPENAI_API_KEY</code> (per DALL-E 3)<br />
                     - <code>HF_TOKEN</code> (per Hugging Face/Flux)<br />
-                    - <code>REPLICATE_API_TOKEN</code> (per Replicate)
+                    - <code>REPLICATE_API_TOKEN</code> (per Replicate)<br />
+                    - <code>GOOGLE_API_KEY</code> (per Imagen 3)
                 </p>
                 <form onSubmit={handleSaveConfig} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
                     <div>

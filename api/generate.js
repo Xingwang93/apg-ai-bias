@@ -49,6 +49,7 @@ export default async function handler(req, res) {
         if (provider === 'openai') configKey = 'OPENAI_API_KEY';
         else if (provider === 'replicate') configKey = 'REPLICATE_API_TOKEN';
         else if (provider === 'huggingface') configKey = 'HF_TOKEN';
+        else if (provider === 'google') configKey = 'GOOGLE_API_KEY';
         else {
             return res.status(400).json({ error: 'Unknown provider' });
         }
@@ -150,6 +151,31 @@ export default async function handler(req, res) {
             const buffer = Buffer.from(arrayBuffer);
             const base64 = buffer.toString('base64');
             imageUrl = `data:image/jpeg;base64,${base64}`;
+        }
+
+        else if (provider === 'google') {
+            // Using Google Generative AI API for Imagen 3
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateImages?key=${apiKey}`;
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    prompt: { text: prompt },
+                    number_of_images: 1
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok || data.error) {
+                throw new Error(data.error?.message || `Google API Error: ${JSON.stringify(data)}`);
+            }
+
+            // Google returns base64 in data.images[0].imageBytes
+            const base64 = data.images[0].imageBytes;
+            imageUrl = `data:image/png;base64,${base64}`;
         }
 
         res.status(200).json({ imageUrl });
