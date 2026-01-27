@@ -4,7 +4,7 @@ function DataEntry({ onAddEntry, userRole }) {
     const [formData, setFormData] = useState({
         prompt: '',
         model: 'FLUX.1 (Hugging Face)',
-        provider: 'hf',
+        provider: 'huggingface',
         gender_bias: 'Male',
         notes: ''
     })
@@ -181,7 +181,7 @@ function DataEntry({ onAddEntry, userRole }) {
                                 setFormData({ ...formData, provider, model })
                             }}
                         >
-                            <option value="hf:FLUX.1 (Hugging Face)">Hugging Face (FLUX.1)</option>
+                            <option value="huggingface:FLUX.1 (Hugging Face)">Hugging Face (FLUX.1)</option>
                             <option value="openai:DALL-E 3">OpenAI (DALL-E 3)</option>
                             <option value="replicate:Flux Dev">Replicate (Flux Dev)</option>
                             <option value="google:Imagen 3">Google (Imagen 3)</option>

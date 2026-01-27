@@ -1,12 +1,5 @@
-function Gallery({ entries }) {
-    if (entries.length === 0) {
-        return (
-            <div className="glass-card" style={{ textAlign: 'center', padding: '3rem' }}>
-                <h3>Galleria Vuota</h3>
-                <p style={{ color: 'var(--text-muted)' }}>Registra le prime osservazioni.</p>
-            </div>
-        )
-    }
+function Gallery({ entries, loading }) {
+    if (loading) return <div className="text-center py-10">Caricamento galleria...</div>
 
     const genderMap = {
         'Male': 'Maschile',
@@ -16,43 +9,33 @@ function Gallery({ entries }) {
     }
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+        <div className="grid-gallery">
             {entries.map((entry) => (
-                <div key={entry.id} className="glass-card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <span style={{
-                            fontSize: '0.8rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            color: 'var(--secondary)',
-                            fontWeight: 600
-                        }}>
-                            {entry.model}
-                        </span>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                            {new Date(entry.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                <div key={entry.id} className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
+                    <div style={{ position: 'relative', aspectRatio: '1/1' }}>
+                        <img
+                            src={entry.image_url}
+                            alt={entry.prompt}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
                     </div>
-
-                    <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', wordBreak: 'break-word' }}>"{entry.prompt}"</h3>
-
-                    {entry.image_url && (
-                        <div style={{ marginBottom: '1rem', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid #E5E7EB' }}>
-                            <img src={entry.image_url} alt={entry.prompt} style={{ width: '100%', height: 'auto', display: 'block' }} />
-                        </div>
-                    )}
-
-                    <div style={{ marginBottom: '1rem' }}>
-                        <span className={`tag ${entry.gender_bias.toLowerCase()}`}>
-                            {genderMap[entry.gender_bias] || entry.gender_bias}
-                        </span>
-                    </div>
-
-                    {entry.notes && (
-                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic', background: '#F9FAFB', padding: '0.5rem', borderRadius: '4px' }}>
-                            {entry.notes}
+                    <div style={{ padding: '1.2rem' }}>
+                        <p style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.5rem', lineHeight: '1.4' }}>
+                            "{entry.prompt}"
                         </p>
-                    )}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{entry.model}</span>
+                            <span className={`tag ${entry.gender_bias.toLowerCase()}`} style={{ fontSize: '0.75rem' }}>
+                                {genderMap[entry.gender_bias] || entry.gender_bias}
+                            </span>
+                        </div>
+
+                        {entry.notes && (
+                            <p className="text-muted" style={{ fontStyle: 'italic', background: 'rgba(0,0,0,0.03)', padding: '0.6rem', borderRadius: '8px', fontSize: '0.85rem' }}>
+                                {entry.notes}
+                            </p>
+                        )}
+                    </div>
                 </div>
             ))}
         </div>

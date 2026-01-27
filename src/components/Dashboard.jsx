@@ -1,80 +1,122 @@
-function Dashboard({ entries }) {
-    if (entries.length === 0) {
-        return (
-            <div className="glass-card" style={{ textAlign: 'center', padding: '3rem' }}>
-                <h3>Nessun Dato Ancora</h3>
-                <p style={{ color: 'var(--text-muted)' }}>Inizia a registrare osservazioni per vedere le statistiche.</p>
-            </div>
-        )
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import WelcomeScreen from './WelcomeScreen'
+import DataEntry from './DataEntry'
+import Gallery from './Gallery'
+
+function Dashboard({ onLogout, adminPasscode }) {
+    const [entries, setEntries] = useState([])
+    const [view, setView] = useState('welcome') // 'welcome', 'entry', 'gallery'
+    const [loading, setLoading] = useState(true)
+
+    const fetchEntries = async () => {
+        setLoading(true)
+        const { data, error } = await supabase
+            .from('observations')
+            .select('*')
+            .order('created_at', { ascending: false })
+
+        if (error) console.error('Error fetching:', error)
+        else setEntries(data || [])
+        setLoading(false)
     }
 
-    // Calculate Stats
-    const total = entries.length
+    useEffect(() => {
+        fetchEntries()
+    }, [])
 
-    const genderCounts = entries.reduce((acc, curr) => {
-        acc[curr.gender_bias] = (acc[curr.gender_bias] || 0) + 1
-        return acc
-    }, {})
+    const handleAddEntry = async (formData, imageBlob) => {
+        try {
+            // 1. Upload Image to Storage
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('images')
+                .upload(fileName, imageBlob)
 
-    const modelCounts = entries.reduce((acc, curr) => {
-        acc[curr.model] = (acc[curr.model] || 0) + 1
-        return acc
-    }, {})
+            if (uploadError) throw uploadError
 
-    const getPercent = (count) => ((count || 0) / total * 100).toFixed(1) + '%'
+            const { data: { publicUrl } } = supabase.storage
+                .from('images')
+                .getPublicUrl(fileName)
 
-    // Mapping for translation display
-    const genderLabels = {
-        'Male': 'Maschile',
-        'Female': 'Femminile',
-        'Balanced': 'Bilanciato',
-        'Ambiguous': 'Ambiguo'
+            // 2. Save Data to Database
+            const { error: dbError } = await supabase
+                .from('observations')
+                .insert([{
+                    prompt: formData.prompt,
+                    model: formData.model,
+                    provider: formData.provider,
+                    image_url: publicUrl,
+                    gender_bias: formData.gender_bias,
+                    notes: formData.notes
+                }])
+
+            if (dbError) throw dbError
+
+            // 3. Refresh and switch view
+            await fetchEntries()
+            setView('gallery')
+
+        } catch (error) {
+            alert('Errore nel salvataggio: ' + error.message)
+        }
     }
 
     return (
-        <div style={{ display: 'grid', gap: '2rem' }}>
-
-            {/* Overview Cards */}
-            <div className="grid-cols-2">
-                <div className="glass-card">
-                    <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>Distribuzione Genere</h3>
-                    {['Male', 'Female', 'Balanced', 'Ambiguous'].map(g => (
-                        <div key={g} style={{ marginBottom: '0.5rem' }}>
-                            <div style={{ display: 'flex', justifySelf: 'space-between', fontSize: '0.9rem', marginBottom: '0.2rem' }}>
-                                <span>{genderLabels[g]}</span>
-                                <span style={{ marginLeft: 'auto' }}>{genderCounts[g] || 0}</span>
-                            </div>
-                            <div style={{ height: '8px', background: '#E5E7EB', borderRadius: '4px', overflow: 'hidden' }}>
-                                <div style={{
-                                    height: '100%',
-                                    width: getPercent(genderCounts[g]),
-                                    background: g === 'Male' ? '#3B82F6' : g === 'Female' ? '#EC4899' : 'var(--primary)'
-                                }} />
-                            </div>
-                        </div>
-                    ))}
+        <div className="container" style={{ paddingBottom: '4rem' }}>
+            <header style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1.5rem 0',
+                marginBottom: '2rem'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                    <img src="/apg-logo.png" alt="APG Logo" style={{ height: '40px' }} />
+                    <h1 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--primary)' }}>
+                        AI BIAS EXPLORER
+                    </h1>
                 </div>
+                <button onClick={onLogout} className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                    Esci
+                </button>
+            </header>
 
-                <div className="glass-card">
-                    <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>Modelli Testati</h3>
-                    {Object.keys(modelCounts).map(m => (
-                        <div key={m} style={{ marginBottom: '0.5rem' }}>
-                            <div style={{ display: 'flex', justifySelf: 'space-between', fontSize: '0.9rem', marginBottom: '0.2rem' }}>
-                                <span>{m}</span>
-                                <span style={{ marginLeft: 'auto' }}>{modelCounts[m]}</span>
-                            </div>
-                            <div style={{ height: '8px', background: '#E5E7EB', borderRadius: '4px', overflow: 'hidden' }}>
-                                <div style={{
-                                    height: '100%',
-                                    width: getPercent(modelCounts[m]),
-                                    background: 'var(--secondary)'
-                                }} />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <nav className="glass-card" style={{
+                display: 'flex',
+                gap: '0.5rem',
+                padding: '0.5rem',
+                marginBottom: '2rem',
+                borderRadius: '16px'
+            }}>
+                <button
+                    className={`btn-nav ${view === 'welcome' ? 'active' : ''}`}
+                    onClick={() => setView('welcome')}
+                    style={{ flex: 1 }}
+                >
+                    Guida
+                </button>
+                <button
+                    className={`btn-nav ${view === 'entry' ? 'active' : ''}`}
+                    onClick={() => setView('entry')}
+                    style={{ flex: 1 }}
+                >
+                    Nuova Osservazione
+                </button>
+                <button
+                    className={`btn-nav ${view === 'gallery' ? 'active' : ''}`}
+                    onClick={() => setView('gallery')}
+                    style={{ flex: 1 }}
+                >
+                    Galleria ({entries.length})
+                </button>
+            </nav>
 
+            <main>
+                {view === 'welcome' && <WelcomeScreen onStart={() => setView('entry')} />}
+                {view === 'entry' && <DataEntry onAddEntry={handleAddEntry} userRole="participant" />}
+                {view === 'gallery' && <Gallery entries={entries} loading={loading} />}
+            </main>
         </div>
     )
 }
