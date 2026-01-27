@@ -13,6 +13,17 @@ function App() {
   const [userRole, setUserRole] = useState(null) // null, 'participant', 'admin'
   const [adminPasscode, setAdminPasscode] = useState(null)
 
+  // Safety check for missing Supabase configuration
+  if (!supabase) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>
+        <h2>Errore di Configurazione</h2>
+        <p>Le chiavi API di Supabase non sono state trovate.</p>
+        <p>Assicurati che le variabili d'ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY siano impostate nel pannello di controllo Vercel.</p>
+      </div>
+    )
+  }
+
   useEffect(() => {
     // 1. Fetch initial data
     const fetchEntries = async () => {
