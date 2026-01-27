@@ -110,6 +110,11 @@ export default async function handler(req, res) {
 
             if (prediction.error) throw new Error(prediction.error);
 
+            if (!prediction.urls || !prediction.urls.get) {
+                console.error('Replicate response missing urls:', prediction);
+                throw new Error('Invalid response from Replicate API');
+            }
+
             // Poll for completion
             const maxAttempts = 60;
             let attempts = 0;
@@ -129,7 +134,7 @@ export default async function handler(req, res) {
         }
 
         else if (provider === 'huggingface') {
-            const response = await fetch('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev', {
+            const response = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-dev', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
