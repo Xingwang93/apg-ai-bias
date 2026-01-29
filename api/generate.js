@@ -36,8 +36,6 @@ export default async function handler(req, res) {
         }
 
         // Default to enabled if not found, but if explicitly false, block it.
-        // Actually, if we are security hardening, maybe default to disabled if config missing?
-        // Let's assume default true if missing, or strictly follow config.
         const isEnabled = genConfig ? genConfig.config_value === 'true' : true;
 
         if (!isEnabled) {
@@ -61,10 +59,6 @@ export default async function handler(req, res) {
             .single();
 
         if (keyError || !keyConfig || !keyConfig.config_value) {
-            // Fallback: check process.env for local dev or backup
-            // But strictly speaking, we want to rely on DB. 
-            // However, if DB fails, maybe we don't want to fallback to env if RLS is strict. 
-            // Let's fallback to process.env[configKey] just in case config isn't in DB yet.
             if (!process.env[configKey]) {
                 throw new Error(`API key for ${provider} not configured in system.`);
             }
@@ -91,10 +85,24 @@ export default async function handler(req, res) {
             });
             const data = await response.json();
             if (data.error) throw new Error(data.error.message);
-            imageUrl = data.data[0].url;
+            
+            // Fetch image and convert to base64 to avoid CORS/browser issues
+            const imgRes = await fetch(data.data[0].url);
+            const arrayBuffer = await imgRes.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            imageUrl = `data:image/png;base64,${buffer.toString('base64')}`;
         }
 
         else if (provider === 'replicate') {
+            // Map common model names to Replicate versions
+            const versionMap = {
+                'Flux Dev': 'black-forest-labs/flux-dev',
+                'black-forest-labs/flux-dev': 'black-forest-labs/flux-dev',
+                'black-forest-labs/flux-schnell': 'black-forest-labs/flux-schnell'
+            };
+            
+            const modelVersion = versionMap[model] || model || 'black-forest-labs/flux-dev';
+
             const response = await fetch('https://api.replicate.com/v1/predictions', {
                 method: 'POST',
                 headers: {
@@ -102,10 +110,17 @@ export default async function handler(req, res) {
                     'Authorization': `Token ${apiKey}`
                 },
                 body: JSON.stringify({
-                    version: model || 'black-forest-labs/flux-dev',
+                    version: modelVersion.includes('/') ? undefined : modelVersion,
+                    model: modelVersion.includes('/') ? modelVersion : undefined,
                     input: { prompt: prompt }
                 })
             });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Replicate API Error: ${errText}`);
+            }
+
             let prediction = await response.json();
 
             if (prediction.error) throw new Error(prediction.error);
@@ -115,8 +130,8 @@ export default async function handler(req, res) {
                 throw new Error('Invalid response from Replicate API');
             }
 
-            // Poll for completion
-            const maxAttempts = 60;
+            // Poll for completion (max 45s to stay within Vercel timeout)
+            const maxAttempts = 45;
             let attempts = 0;
             while (prediction.status !== 'succeeded' && prediction.status !== 'failed' && attempts < maxAttempts) {
                 await new Promise(r => setTimeout(r, 1000));
@@ -124,13 +139,20 @@ export default async function handler(req, res) {
                 const resPoll = await fetch(prediction.urls.get, {
                     headers: { 'Authorization': `Token ${apiKey}` }
                 });
-                prediction = await resPoll.json();
+                if (resPoll.ok) {
+                    prediction = await resPoll.json();
+                }
             }
 
-            if (prediction.status === 'failed') throw new Error('Replicate generation failed');
-            if (prediction.status !== 'succeeded') throw new Error('Generation timed out');
+            if (prediction.status === 'failed') throw new Error(`Replicate generation failed: ${prediction.error || 'Unknown error'}`);
+            if (prediction.status !== 'succeeded') throw new Error('Generation timed out on Replicate');
 
-            imageUrl = prediction.output[0];
+            // Fetch the image from Replicate's output and convert to base64
+            const finalUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
+            const imgRes = await fetch(finalUrl);
+            const arrayBuffer = await imgRes.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            imageUrl = `data:image/webp;base64,${buffer.toString('base64')}`;
         }
 
         else if (provider === 'huggingface') {
@@ -148,10 +170,6 @@ export default async function handler(req, res) {
                 throw new Error(`HF Error: ${err}`);
             }
 
-            // HF returns a blob (image/jpeg)
-            // We need to convert it to base64 or a URL. 
-            // Since we can't easily return a blob URL that works on client from server function without hosting,
-            // we will return base64 data URI.
             const arrayBuffer = await response.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
             const base64 = buffer.toString('base64');
@@ -159,7 +177,6 @@ export default async function handler(req, res) {
         }
 
         else if (provider === 'google') {
-            // Using Google Generative AI API for Imagen 3
             const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateImages?key=${apiKey}`;
 
             const response = await fetch(endpoint, {
@@ -178,7 +195,6 @@ export default async function handler(req, res) {
                 throw new Error(data.error?.message || `Google API Error: ${JSON.stringify(data)}`);
             }
 
-            // Google returns base64 in data.images[0].imageBytes
             const base64 = data.images[0].imageBytes;
             imageUrl = `data:image/png;base64,${base64}`;
         }

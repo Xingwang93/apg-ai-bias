@@ -9,15 +9,11 @@ function DataEntry({ onAddEntry, userRole }) {
         notes: ''
     })
 
-    // Removed tokens state and key fetching useEffect as they are now securely managed on the backend
-
     const [generatedImage, setGeneratedImage] = useState(null)
     const [imageBlob, setImageBlob] = useState(null)
     const [isGenerating, setIsGenerating] = useState(false)
     const [error, setError] = useState('')
 
-    // We assume generation is enabled by default for UI, backend will enforce check. 
-    // If backend returns "Generation Disabled" (403), we show it then.
     const [generationEnabled, setGenerationEnabled] = useState(true)
 
     const handleGenerate = async () => {
@@ -28,8 +24,9 @@ function DataEntry({ onAddEntry, userRole }) {
 
         setIsGenerating(true)
         setGeneratedImage(null)
+        setImageBlob(null)
         setError('')
-        setGenerationEnabled(true) // Reset enabling on new attempt
+        setGenerationEnabled(true)
 
         try {
             const response = await fetch('/api/generate', {
@@ -43,22 +40,20 @@ function DataEntry({ onAddEntry, userRole }) {
             })
 
             const data = await response.json()
-
             if (!response.ok) {
                 if (response.status === 403) {
-                    setGenerationEnabled(false) // Disable UI feedback
+                    setGenerationEnabled(false)
                     throw new Error('La generazione è stata disattivata dall\'amministratore.')
                 }
                 throw new Error(data.error || 'Errore nella generazione.')
             }
 
-            // Convert URL to Blob for storage uploading later (since our workflow saves blobs)
-            // Note: The backend returns a public URL or Base64. 
-            // If URL, we fetch it here to turn into Blob.
+            // Backend now returns directly the image (base64 or URL). 
+            setGeneratedImage(data.imageUrl)
+
+            // Convert data URI or URL to Blob for storage
             const imgRes = await fetch(data.imageUrl)
             const blob = await imgRes.blob()
-
-            setGeneratedImage(data.imageUrl)
             setImageBlob(blob)
 
         } catch (err) {
@@ -72,7 +67,6 @@ function DataEntry({ onAddEntry, userRole }) {
     const handleSubmit = (e) => {
         e.preventDefault()
 
-        // Frontend Validation
         if (!formData.prompt || !imageBlob) {
             alert('Genera prima un immagine!')
             return
@@ -83,7 +77,6 @@ function DataEntry({ onAddEntry, userRole }) {
             return
         }
 
-        // Sanitization: Remove potential HTML tags to prevent edge-case XSS
         const sanitizedData = {
             ...formData,
             prompt: formData.prompt.replace(/<[^>]*>?/gm, ''),
