@@ -19,7 +19,7 @@ function App() {
       <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>
         <h2>Errore di Configurazione</h2>
         <p>Le chiavi API di Supabase non sono state trovate.</p>
-        <p>Assicurati che le variabili d'ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY siano impostate nel pannello di controllo Vercel.</p>
+        <p>Assicuratevi che le variabili d'ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY siano impostate nel pannello di controllo Vercel.</p>
       </div>
     )
   }
@@ -107,20 +107,13 @@ function App() {
   return (
     <div className="container">
       <header className="app-header">
-        <button
-          onClick={() => { setUserRole(null); setAdminPasscode(null); }}
-          className="back-btn"
-        >
-          ← Cambia Ruolo
-        </button>
-
         <img src="/logo-apg.png" alt="APG Logo" className="logo" />
 
         <div className="title-section">
           <h1>AI Gender Guard</h1>
           <p className="subtitle">Analisi della Parità di Genere nella GenAI.</p>
           <div className="stats-pill">
-            Osservazioni: <strong>{entries.length}</strong>
+            Osservazioni Totali: <strong>{entries.length}</strong>
           </div>
         </div>
       </header>
@@ -182,25 +175,6 @@ function App() {
           width: auto;
           filter: drop-shadow(0 4px 10px rgba(0,0,0,0.1));
         }
-        .back-btn {
-          position: absolute;
-          top: 0;
-          left: 0;
-          background: rgba(255,255,255,0.5);
-          backdrop-filter: blur(4px);
-          border: 1px solid var(--glass-border);
-          padding: 0.4rem 0.8rem;
-          border-radius: var(--radius-sm);
-          color: var(--text-muted);
-          cursor: pointer;
-          font-size: 0.8rem;
-          font-weight: 600;
-          transition: all 0.2s;
-        }
-        .back-btn:hover {
-          background: white;
-          color: var(--primary);
-        }
         .title-section h1 {
           margin-bottom: 0.2rem;
         }
@@ -220,7 +194,7 @@ function App() {
           box-shadow: 0 4px 12px rgba(0, 51, 153, 0.2);
         }
         @media (max-width: 768px) {
-          .back-btn { position: static; margin-bottom: 1rem; }
+          .app-header { gap: 1rem; }
         }
       `}</style>
     </div>
