@@ -85,11 +85,7 @@ export default async function handler(req, res) {
             });
             const data = await response.json();
             if (data.error) throw new Error(data.error.message);
-<<<<<<< HEAD
-            
-=======
 
->>>>>>> 6582a60 (Refining gallery: smaller images, repositioned labels, and added delete/download buttons)
             // Fetch image and convert to base64 to avoid CORS/browser issues
             const imgRes = await fetch(data.data[0].url);
             const arrayBuffer = await imgRes.arrayBuffer();
@@ -104,20 +100,11 @@ export default async function handler(req, res) {
                 'black-forest-labs/flux-dev': 'black-forest-labs/flux-dev',
                 'black-forest-labs/flux-schnell': 'black-forest-labs/flux-schnell'
             };
-<<<<<<< HEAD
-            
-=======
-
->>>>>>> 6582a60 (Refining gallery: smaller images, repositioned labels, and added delete/download buttons)
             const modelVersion = versionMap[model] || model || 'black-forest-labs/flux-dev';
 
             // Determine if we should use the version endpoint or the model endpoint
             const isSlug = modelVersion.includes('/');
-<<<<<<< HEAD
-            const url = isSlug 
-=======
             const url = isSlug
->>>>>>> 6582a60 (Refining gallery: smaller images, repositioned labels, and added delete/download buttons)
                 ? `https://api.replicate.com/v1/models/${modelVersion}/predictions`
                 : `https://api.replicate.com/v1/predictions`;
 

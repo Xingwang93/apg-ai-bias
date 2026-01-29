@@ -151,6 +151,16 @@ function App() {
             Osservazioni Totali: <strong>{entries.length}</strong>
           </div>
         </div>
+
+        {userRole === 'participant' && (
+          <button
+            className="switch-role-btn"
+            onClick={() => setUserRole(null)}
+            title="Cambia modalità / Accedi come Admin"
+          >
+            ⚙️ Admin
+          </button>
+        )}
       </header>
 
       {userRole === 'admin' ? (
@@ -230,6 +240,30 @@ function App() {
         }
         @media (max-width: 768px) {
           .app-header { gap: 1rem; }
+        }
+        .switch-role-btn {
+          position: absolute;
+          top: 0;
+          right: 0;
+          background: rgba(255, 255, 255, 0.5);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          padding: 0.5rem 1rem;
+          border-radius: var(--radius-sm);
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: var(--text-main);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .switch-role-btn:hover {
+          background: white;
+          transform: translateY(-2px);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
       `}</style>
     </div>
