@@ -103,15 +103,20 @@ export default async function handler(req, res) {
             
             const modelVersion = versionMap[model] || model || 'black-forest-labs/flux-dev';
 
-            const response = await fetch('https://api.replicate.com/v1/predictions', {
+            // Determine if we should use the version endpoint or the model endpoint
+            const isSlug = modelVersion.includes('/');
+            const url = isSlug 
+                ? `https://api.replicate.com/v1/models/${modelVersion}/predictions`
+                : `https://api.replicate.com/v1/predictions`;
+
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Token ${apiKey}`
                 },
                 body: JSON.stringify({
-                    version: modelVersion.includes('/') ? undefined : modelVersion,
-                    model: modelVersion.includes('/') ? modelVersion : undefined,
+                    version: isSlug ? undefined : modelVersion,
                     input: { prompt: prompt }
                 })
             });
