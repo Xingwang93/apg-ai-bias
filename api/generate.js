@@ -83,8 +83,13 @@ export default async function handler(req, res) {
                     size: '1024x1024'
                 })
             });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error?.message || `OpenAI Error: ${response.statusText}`);
+            }
+
             const data = await response.json();
-            if (data.error) throw new Error(data.error.message);
 
             // Fetch image and convert to base64 to avoid CORS/browser issues
             const imgRes = await fetch(data.data[0].url);
@@ -194,19 +199,44 @@ export default async function handler(req, res) {
                 })
             });
 
+            const contentType = response.headers.get('content-type');
+            if (!response.ok) {
+                let errorMsg = `Google API Error (${response.status})`;
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    errorMsg = data.error?.message || errorMsg;
+                } else {
+                    const text = await response.text();
+                    errorMsg = text || errorMsg;
+                }
+                throw new Error(errorMsg);
+            }
+
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Google API returned an unexpected non-JSON response.');
+            }
+
             const data = await response.json();
-            if (!response.ok || data.error) {
-                throw new Error(data.error?.message || `Google API Error: ${JSON.stringify(data)}`);
+            if (!data.images || data.images.length === 0) {
+                throw new Error('Google API returned no images. Check prompt safety filters.');
             }
 
             const base64 = data.images[0].imageBytes;
             imageUrl = `data:image/png;base64,${base64}`;
         }
 
+        if (!imageUrl) {
+            throw new Error('Image generation failed: unknown error');
+        }
+
         res.status(200).json({ imageUrl });
 
     } catch (error) {
-        console.error('Generation Error:', error);
+        console.error('Generation Error Detail:', {
+            message: error.message,
+            stack: error.stack,
+            provider
+        });
         res.status(500).json({ error: error.message });
     }
 }
