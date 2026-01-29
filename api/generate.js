@@ -186,43 +186,63 @@ export default async function handler(req, res) {
         }
 
         else if (provider === 'google') {
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateImages?key=${apiKey}`;
+            // Google Imagen 3 endpoints can vary by region and API status.
+            // We'll try the most standard v1beta endpoint.
+            const modelIds = ['imagen-3.0-generate-001', 'imagen-3.0-alpha-001'];
+            let lastError = null;
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    prompt: { text: prompt },
-                    number_of_images: 1
-                })
-            });
+            for (const modelId of modelIds) {
+                try {
+                    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateImages?key=${apiKey}`;
 
-            const contentType = response.headers.get('content-type');
-            if (!response.ok) {
-                let errorMsg = `Google API Error (${response.status})`;
-                if (contentType && contentType.includes('application/json')) {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            prompt: { text: prompt },
+                            number_of_images: 1
+                        })
+                    });
+
+                    const contentType = response.headers.get('content-type');
+                    if (!response.ok) {
+                        let errorMsg = `Google API Error (${response.status} for ${modelId})`;
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            errorMsg = data.error?.message || errorMsg;
+                        } else {
+                            const text = await response.text();
+                            errorMsg = text || errorMsg;
+                        }
+
+                        // If it's a 404, we try the next model in the list
+                        if (response.status === 404) {
+                            console.warn(`Model ${modelId} not found (404), trying fallback...`);
+                            lastError = new Error(errorMsg);
+                            continue;
+                        }
+                        throw new Error(errorMsg);
+                    }
+
                     const data = await response.json();
-                    errorMsg = data.error?.message || errorMsg;
-                } else {
-                    const text = await response.text();
-                    errorMsg = text || errorMsg;
+                    if (!data.images || data.images.length === 0) {
+                        throw new Error('Google API returned no images. Check prompt safety filters.');
+                    }
+
+                    const base64 = data.images[0].imageBytes;
+                    imageUrl = `data:image/png;base64,${base64}`;
+                    break; // Success!
+
+                } catch (err) {
+                    lastError = err;
+                    if (err.message.includes('404')) continue;
+                    throw err; // Re-throw if it's not a 404 (e.g. auth error)
                 }
-                throw new Error(errorMsg);
             }
 
-            if (!contentType || !contentType.includes('application/json')) {
-                throw new Error('Google API returned an unexpected non-JSON response.');
+            if (!imageUrl && lastError) {
+                throw lastError;
             }
-
-            const data = await response.json();
-            if (!data.images || data.images.length === 0) {
-                throw new Error('Google API returned no images. Check prompt safety filters.');
-            }
-
-            const base64 = data.images[0].imageBytes;
-            imageUrl = `data:image/png;base64,${base64}`;
         }
 
         if (!imageUrl) {
