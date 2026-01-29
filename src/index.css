@@ -265,6 +265,31 @@ h1 {
   }
 }
 
+/* Statistics Improvements */
+.grid-cols-2 .glass-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 10px;
+}
+
 /* Utility */
 .mb-2 {
   margin-bottom: 0.5rem;

@@ -49,6 +49,9 @@ function DataEntry({ onAddEntry, userRole }) {
             }
 
             // Backend now returns directly the image (base64 or URL). 
+            // If it's a data URI (base64), we can just set it. 
+            // If it's a regular URL (Hugging Face / Google might still return base64 data URIs too), 
+            // we'll handle both but priority is direct data.
             setGeneratedImage(data.imageUrl)
 
             // Convert data URI or URL to Blob for storage

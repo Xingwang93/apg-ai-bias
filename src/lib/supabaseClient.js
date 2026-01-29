@@ -8,6 +8,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase Keys missing! Realtime features will not work.')
 }
 
-export const supabase = (supabaseUrl && supabaseAnonKey) 
-  ? createClient(supabaseUrl, supabaseAnonKey) 
+export const supabase = (supabaseUrl && supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey)
   : null

@@ -92,6 +92,41 @@ function App() {
     }
   }
 
+  const deleteEntry = async (id, imageUrl) => {
+    if (!confirm('Sei sicuro di voler eliminare questa osservazione?')) return
+
+    // 1. Delete from database
+    const { error: dbError } = await supabase
+      .from('observations')
+      .delete()
+      .eq('id', id)
+
+    if (dbError) {
+      alert('Errore nella cancellazione: ' + dbError.message)
+      return
+    }
+
+    // 2. Delete from storage if image exists
+    if (imageUrl) {
+      try {
+        const urlObj = new URL(imageUrl)
+        const pathParts = urlObj.pathname.split('/')
+        const fileName = pathParts[pathParts.length - 1]
+
+        const { error: storageError } = await supabase.storage
+          .from('observations')
+          .remove([fileName])
+
+        if (storageError) console.error('Error removing image from storage:', storageError)
+      } catch (e) {
+        console.error('Error parsing image URL for deletion:', e)
+      }
+    }
+
+    // 3. Update local state
+    setEntries((current) => current.filter((e) => e.id !== id))
+  }
+
   // If role is not selected, show welcome screen
   if (!userRole) {
     return (
@@ -154,7 +189,7 @@ function App() {
               <Dashboard entries={entries} />
             )}
             {activeTab === 'gallery' && (
-              <Gallery entries={entries} />
+              <Gallery entries={entries} onDelete={deleteEntry} userRole={userRole} />
             )}
           </main>
         </>
